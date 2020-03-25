@@ -8,21 +8,15 @@ end
 
 Jekyll::Hooks.register :pages, :post_init do |page|
   if key = key_from_page_filename(page.name)
-    texts[key] = page.content
+    texts[key] = page.content unless page.data['translate_content'] == false
+    texts["#{key}-title"] = page.data['title']
   end
 end
 
 Jekyll::Hooks.register :site, :post_write do |site|
   next unless site.config['active_lang'] == 'en'
   texts.merge!(site.data['strings'])
+  texts.merge!(site.data['section_content'] || {})
 
-  site.data['sections']['en'].each do |file|
-    key = key_from_filename(file)
-    content = File.open(file, 'r:UTF-8') { |f| f.read }
-    texts[key] = content
-  end
-
-  File.open("#{site.dest}/i18n-en.json", "w") do |file|
-    file.puts JSON.pretty_generate(texts)
-  end
+  File.write "#{site.dest}/i18n-en.json", JSON.pretty_generate(texts)
 end
